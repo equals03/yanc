@@ -1,0 +1,9 @@
+result
+.cache
+.local
+.direnv
+doc/index.html
+pkgs/_sources/.shake*
+
+/*.qcow2
+.std
