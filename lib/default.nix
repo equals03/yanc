@@ -10,6 +10,7 @@
   yanc-lib = foldr (l: r: l // r) {} [
     (import-module ./attrs.nix)
     (import-module ./lists.nix)
+    (import-module ./modules.nix)
     (import-module ./fn.nix)
     (import-module ./fs.nix)
     (import-module ./path.nix)
