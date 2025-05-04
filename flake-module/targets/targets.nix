@@ -43,7 +43,7 @@
           ];
           options = {
             name = mkOption {
-              type = types.str;
+              type = str;
               description = ''
                 The name of the target, automatically set to the attribute name of the target in `yanc.targets`.
                 Used internally to reference the target.
@@ -215,7 +215,8 @@
               type = deepMergedAttrsOf raw;
               description = ''
                 Extra arguments passed to the host's modules.
-                These can be used to customize module behavior for the specific host.'';
+                These can be used to customize module behavior for the specific host.
+              '';
               example = literalExpression ''
                 { domain = "example.com"; port = 8080; }
               '';

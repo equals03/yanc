@@ -4,6 +4,10 @@
     nixpkgs-stable.url = "github:NixOS/nixpkgs/nixos-24.11/";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
 
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
     nixos-generators = {
       url = "github:nix-community/nixos-generators";
       inputs.nixpkgs.follows = "nixpkgs-unstable";
@@ -22,12 +26,15 @@
       lib,
       yanc-lib,
       withTarget,
+      withHome,
       ...
     }: {
       imports = [
         inputs.yanc.flakeModule
+        inputs.home-manager.flakeModules.home-manager
       ];
 
+      debug = true;
       systems = ["x86_64-linux" "x86_64-darwin"];
 
       yanc.builders.nixos-generators = {
@@ -83,6 +90,40 @@
             format = "custom-iso";
           };
         };
+      };
+
+      yanc.homes = {
+        me = {
+          extraSpecialArgs = {
+            top-level = true;
+          };
+          hosts = {
+            linux-host = {
+              specialArgs = {
+                linux-alias = true;
+              };
+            };
+            darwin-host = {
+              system = "x86_64-darwin";
+            };
+          };
+        };
+      };
+
+      perHome = {
+        home,
+        builders,
+        withSystem,
+        ...
+      }: {
+        flake.homeConfigurations =
+          yanc-lib.map (_: home': (
+            withSystem home'.system (
+              {channels', ...}:
+                builders.home-manager (home' channels'.nixpkgs-unstable)
+            )
+          ))
+          home;
       };
 
       perSystem = {

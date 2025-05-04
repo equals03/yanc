@@ -52,5 +52,9 @@ in {
     perTarget = {
       _module.args.builders = realised-builders;
     };
+
+    perHome = {
+      _module.args.builders = realised-builders;
+    };
   };
 }

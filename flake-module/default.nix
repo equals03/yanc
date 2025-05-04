@@ -10,6 +10,7 @@ args: {
   imports = [
     ./builders
     ./channels
+    ./homes
     ./targets
 
     ./realised.nix

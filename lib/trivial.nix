@@ -37,9 +37,14 @@ in {
     && ((maybe-pkgs.lib or {}) ? darwinSystem);
 
   # aaaannnnd, yes. same for nixos-generators
-  is-nixos-generators = maybe-pkgs:
-    (is-flake maybe-pkgs)
-    && maybe-pkgs ? nixosGenerate;
+  is-nixos-generators = maybe-ng:
+    (is-flake maybe-ng)
+    && maybe-ng ? nixosGenerate;
+
+  # aaaannnnd, yes. same for home-manager
+  is-home-manager = maybe-hm:
+    (is-flake maybe-hm)
+    && ((maybe-hm.lib or {}) ? homeManagerConfiguration);
 
   # because life is to short to worry about filter vs filterAttrs
   filter = predicate: (overloaded {

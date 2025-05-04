@@ -18,6 +18,7 @@
   inherit
     (yanc-lib)
     map
+    map'
     filter
     without
     merge-recursive
@@ -30,12 +31,12 @@
     ;
 
   cfg = config;
-  cfg-targets = cfg.yanc.targets;
+  cfg-homes = cfg.yanc.homes;
 
-  realised-targets = cfg.yanc.realised.targets;
+  realised-homes = cfg.yanc.realised.homes;
 
-  sanitise-host = without ["modules" "specialArgs"];
-  to-host-for = target:
+  sanitise-host = without ["modules" "specialArgs" "extraSpecialArgs"];
+  to-host-for = home:
     compose-all [
       ## modules
       (host:
@@ -49,16 +50,21 @@
                   (final: prev: {channels = (prev.channels or {}) // channels';})
                 ];
               })
-              ## some sensible host based defaults
+              ## some sensible defaults
               ({
-                host,
+                home,
                 lib,
+                pkgs,
                 ...
               }: {
-                networking.hostName = lib.mkDefault host.name;
-                nixpkgs = {
-                  hostPlatform = lib.mkDefault host.system;
-                };
+                home.username = lib.mkDefault home.name;
+                home.homeDirectory = lib.mkDefault (
+                  if pkgs.stdenv.hostPlatform.isDarwin
+                  then "/Users/${home.name}"
+                  else "/home/${home.name})"
+                );
+
+                programs.home-manager.enable = lib.mkDefault true;
               })
               ## some sensible nix based defaults
               ({
@@ -69,7 +75,7 @@
                 cfg = config;
                 cfg-nix = cfg.nix;
               in {
-                nix = {
+                nix = lib.mkIf (cfg-nix.package != null) {
                   settings = {
                     # we are using flakes right?? :P
                     experimental-features = lib.mkDefault [
@@ -86,27 +92,17 @@
                   };
                 };
               })
-              ## include the revision of the flake that built this config (if available)
-              ({
-                self,
-                lib,
-                ...
-              }: {
-                system.configurationRevision = lib.mkIf (self ? rev) self.rev;
-              })
             ]
-
-            target.modules
-            (target.perSystem.${host.system}.modules or [])
-            host.modules
+            home.modules or []
+            host.modules or []
           ];
         })
       ## specialArgs
       (host:
         host
         // {
-          specialArgs =
-            (withSystem host.system ({
+          extraSpecialArgs =
+            (withSystem (host.system or home.system) ({
               self',
               inputs',
               channels',
@@ -116,46 +112,54 @@
               {
                 inherit yanc-lib;
                 host = sanitise-host host;
-                target = sanitise-target (target // {hosts = map (_: sanitise-host) target.hosts;});
+                home = sanitise-home home;
               }
 
-              target.specialArgs
-              (target.perSystem.${host.system}.specialArgs or {})
-              host.specialArgs
+              home.extraSpecialArgs or {}
+              host.extraSpecialArgs or {}
             ]);
         })
     ];
 
-  sanitise-target = without ["modules" "specialArgs" "perSystem"];
-  to-target = compose-all [
+  sanitise-home = without ["modules" "specialArgs" "extraSpecialArgs" "hosts"];
+  to-homes = compose-all [
     (
-      target: let
-        realised = target // {hosts = map (_: (to-host-for target)) target.hosts;};
-        filter-hosts = {system, ...}: realised // {hosts = filter (_: host: host.system == system) realised.hosts;};
+      home: let
+        realised-homes =
+          {
+            ${home.name} = without ["hosts"] (home // (to-host-for home {}));
+          }
+          // map' (host-name: host: {
+            name = "${home.name}@${host-name}";
+            value = to-host-for home host;
+          })
+          home.hosts;
       in
-        realised
-        // setFunctionArgs filter-hosts (builtins.functionArgs filter-hosts)
+        map (_: realised: let
+          with-pkgs = pkgs: realised // {inherit pkgs;};
+        in
+          realised // setFunctionArgs with-pkgs (builtins.functionArgs with-pkgs))
+        realised-homes
     )
-    sanitise-target
   ];
 in {
   options = {
     yanc.realised = {
-      targets = mkRealisedOption {
-        default = cfg-targets;
-        apply = map (_: to-target);
+      homes = mkRealisedOption {
+        default = cfg-homes;
+        apply = map (_: to-homes);
       };
     };
   };
 
   config = {
-    _module.args.targets = realised-targets;
+    _module.args.homes = realised-homes;
 
     yanc.realisePerSystem = {system, ...}: {
       options = {
-        targets = mkRealisedOption {
-          default = realised-targets;
-          apply = map (_: target: target {inherit system;});
+        homes = mkRealisedOption {
+          default = realised-homes;
+          apply = map (_: filter (_: home: home.system == system));
 
           internal = true;
         };
@@ -163,14 +167,14 @@ in {
     };
 
     perSystem = {system, ...}: {
-      _module.args.targets' = (getRealisedSystem system).targets;
+      _module.args.homes' = (getRealisedSystem system).homes;
     };
 
-    perTarget = {target-name, ...}: {
-      _module.args.target = realised-targets.${target-name} or {};
+    perHome = {home-name, ...}: {
+      _module.args.home = realised-homes.${home-name} or {};
 
       perSystem = {system, ...}: {
-        _module.args.target' = (getRealisedSystem system).targets.${target-name};
+        _module.args.home' = (getRealisedSystem system).homes.${home-name};
       };
     };
   };
