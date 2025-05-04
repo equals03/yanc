@@ -7,7 +7,9 @@
     (lib)
     isAttrs
     filterAttrs
+    filterAttrsRecursive
     mapAttrs
+    mapAttrs'
     optionals
     optionalAttrs
     ;
@@ -45,10 +47,20 @@ in {
     list = builtins.filter predicate;
   });
 
+  # just wanted to keep it "in the same place"
+  filter' = predicate: (overloaded {
+    set = filterAttrsRecursive predicate;
+  });
+
   # because life is to short to worry about map vs mapAttrs
   map = f: (overloaded {
     set = mapAttrs f;
     list = builtins.map f;
+  });
+
+  # just wanted to keep it "in the same place"
+  map' = f: (overloaded {
+    set = mapAttrs' f;
   });
 
   # because life is to short to worry about optional vs optionals vs optionalAttrs
