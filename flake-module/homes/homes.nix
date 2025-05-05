@@ -40,11 +40,14 @@
             {
               config = {
                 modules = concatLists [
+                  (cfg-settings.homes.shared.modules or [])
                   (take 1 (filter pathExists [
                     (builtins.toPath "${cfg-settings.homes.path}/${name}.nix")
                     (builtins.toPath "${cfg-settings.homes.path}/${name}/")
                   ]))
                 ];
+
+                extraSpecialArgs = cfg-settings.homes.shared.extraSpecialArgs or {};
               };
             }
           ];
@@ -267,6 +270,45 @@ in {
           '';
           example = literalExpression ''./yanc/homes'';
           default = builtins.toPath "${self}/homes";
+        };
+
+        shared = mkOption {
+          type = submodule {
+            imports = [
+              (mkAliasOptionModule ["specialArgs"] ["extraSpecialArgs"])
+            ];
+            options = {
+              modules = mkOption {
+                type = uniqueListOf module;
+                description = ''
+                  A list of Home Manager modules to be included in all home configurations.
+                '';
+                example = literalExpression ''
+                  [
+                    ./home/hosts/laptop/alice.nix
+                    { programs.vscode.enable = true; }
+                  ]
+                '';
+                default = [];
+              };
+
+              extraSpecialArgs = mkOption {
+                type = deepMergedAttrsOf raw;
+                description = ''
+                  Extra arguments passed to the Home Manager modules for this host-specific configuration.
+                  These can customize module behavior, such as setting host-specific variables.
+                '';
+                example = literalExpression ''
+                  { hostname = "laptop"; gui = true; }
+                '';
+                default = {};
+              };
+            };
+          };
+          description = ''
+            Shared modules/extraSpecialArgs applied to all homes.
+          '';
+          default = {};
         };
       };
     };

@@ -34,7 +34,6 @@
         inputs.home-manager.flakeModules.home-manager
       ];
 
-      debug = true;
       systems = ["x86_64-linux" "x86_64-darwin"];
 
       yanc.builders.nixos-generators = {
