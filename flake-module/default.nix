@@ -11,8 +11,10 @@ args: {
     ./builders
     ./channels
     ./homes
+    ./hosts
     ./targets
 
     ./realised.nix
+    ./fluent.nix
   ];
 }

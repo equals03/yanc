@@ -11,17 +11,22 @@
     ;
 
   builders-from-inputs = let
-    input-to-builder = builder-fn: {
+    input-to-builder = input: let
+      builder-fn = input.lib.homeManagerConfiguration;
+    in {
       builder = {settings, ...}: {
+        system,
         modules,
         extraSpecialArgs,
-        pkgs,
+        pkgs ? import input.inputs.nixpkgs {inherit system;},
         ...
       }:
         builder-fn (settings // {inherit modules extraSpecialArgs pkgs;});
+
+      type = "home";
     };
     builder-inputs = filter (_: is-home-manager) inputs;
-    builders = map (_: input: input-to-builder (input.lib.homeManagerConfiguration)) builder-inputs;
+    builders = map (_: input-to-builder) builder-inputs;
   in
     builders;
 in {

@@ -9,6 +9,7 @@
     (lib)
     genAttrs
     mkOption
+    unique
     ;
 
   inherit
@@ -22,12 +23,35 @@
     ;
 
   cfg = config;
-  cfg-realised = cfg.yanc.realised;
+  cfg-yanc = cfg.yanc;
+  # cfg-hosts = cfg-yanc.hosts;
+  # cfg-homes = cfg-yanc.homes;
+
+  cfg-realised = cfg-yanc.realised;
+
+  inherit (cfg-yanc) systems;
+  # systems = unique (concatLists [
+  #   cfg.systems
+  #   # get all the systems from the possible hosts
+  #   (mapAttrsToList (_: host: host.system) cfg-realised-hosts)
+  #   # get all the systems from the possible homes
+  #   #(mapAttrsToList (_: home: home.system) cfg-realised-homes)
+  #   # get all the systems from the possible home->hosts
+  #   #(flatten (mapAttrsToList (_: home: (mapAttrsToList (_: host: host.system) home.hosts)) cfg-realised-homes))
+  # ]);
+
+  getRealisedSystem = system: cfg-realised.systems.${system} or (builtins.trace "using non-memoized realised system ${system}" cfg.yanc.realisePerSystem system);
 in {
   options = with types; {
     yanc = {
+      systems = mkOption {
+        type = listOf str;
+        default = cfg.systems;
+        apply = unique;
+        internal = true;
+      };
       realisePerSystem = mkOption {
-        type = mkPerSystemType ({system, ...}: {
+        type = mkPerSystemType (_: {
           # basic type checking so that i don't lose system along the way ;P
         });
         default = {};
@@ -52,10 +76,14 @@ in {
   };
 
   config = {
-    yanc.realised.systems = genAttrs cfg.systems cfg.yanc.realisePerSystem;
+    yanc.realised.systems = genAttrs systems cfg.yanc.realisePerSystem;
 
     _module.args = {
-      getRealisedSystem = system: cfg-realised.systems.${system} or (builtins.trace "using non-memoized realised system ${system}" cfg.yanc.realisePerSystem system);
+      inherit getRealisedSystem;
+    };
+
+    perSystem = {system, ...}: {
+      _module.args.realisedSystem = getRealisedSystem system;
     };
   };
 }

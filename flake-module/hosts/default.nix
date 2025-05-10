@@ -1,6 +1,6 @@
 {
   imports = [
-    ./targets.nix
+    ./hosts.nix
     ./realised.nix
   ];
 }

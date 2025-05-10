@@ -13,57 +13,38 @@
   };
 
   outputs = {flake-parts, ...} @ inputs:
-    flake-parts.lib.mkFlake {inherit inputs;} ({
-      self,
-      lib,
-      yanc-lib,
-      ...
-    }: {
+    flake-parts.lib.mkFlake {inherit inputs;} ({useYanc, ...}: {
       imports = [
         inputs.yanc.flakeModule
       ];
 
       systems = ["x86_64-linux"];
 
-      yanc.targets = {
-        nixos = {
-          hosts = {
-            host1 = {
-              # List of additional NixOS modules to include for this host.
-              # These modules supplement the automatic configuration sourced from (configurable):
-              # 1. `./hosts/host1.nix` (if it exists), or
-              # 2. All `.nix` files in `./hosts/host1/**/*.nix` (recursively).
+      yanc.hosts = {
+        host1 = {
+          # List of additional NixOS modules to include for this host.
+          # These modules supplement the automatic configuration sourced from (configurable):
+          # 1. `./hosts/host1.nix` (if it exists), or
+          # 2. All `.nix` files in `./hosts/host1/**/*.nix` (recursively).
 
-              # Module Resolution Notes:
-              # - If the specified path is a directory, all `.nix` files are recursively included.
-              # - Files or directories prefixed with an underscore (`_`) are ignored during recursion.
-              # - Recursion stops if a `default.nix` file is found in the directory.
-              # - The resolution logic prioritizes a single `host1.nix` file over recursive sourcing.
+          # Module Resolution Notes:
+          # - If the specified path is a directory, all `.nix` files are recursively included.
+          # - Files or directories prefixed with an underscore (`_`) are ignored during recursion.
+          # - Recursion stops if a `default.nix` file is found in the directory.
+          # - The resolution logic prioritizes a single `host1.nix` file over recursive sourcing.
 
-              # Use this to define ad-hoc or custom modules specific to this host.
-              modules = [
-              ];
+          # Use this to define ad-hoc or custom modules specific to this host.
+          modules = [
+          ];
 
-              # Custom arguments to pass to this host's configuration modules.
-              # These are accessible within the module's scope as `specialArgs`.
-              # Example: `{ customOption = "value"; }` makes `customOption` available.
-              specialArgs = {
-              };
-            };
+          # Custom arguments to pass to this host's configuration modules.
+          # These are accessible within the module's scope as `specialArgs`.
+          # Example: `{ customOption = "value"; }` makes `customOption` available.
+          specialArgs = {
           };
         };
       };
 
-      # This "builds" all hosts for all targets as nixosConfigurations. There are alternatives with
-      # more control (`withTarget`) but for the general case this is fine.
-      # `builders` are automatically discovered via the inputs and will be made available (if applicable)
-      # via builders.${name-of-input}
-      perTarget = {
-        target,
-        builders,
-        ...
-      }: {
-        flake.nixosConfigurations = yanc-lib.map (_: builders.nixpkgs-stable) target.hosts;
-      };
+      flake.nixosConfigurations = useYanc.to.build.hosts.using.nixpkgs {};
     });
 }

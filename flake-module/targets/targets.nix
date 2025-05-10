@@ -34,8 +34,8 @@
               config = {
                 modules = concatLists [
                   (take 1 (filter pathExists [
-                    (builtins.toPath "${cfg-settings.targets.path}/${name}.nix")
-                    (builtins.toPath "${cfg-settings.targets.path}/${name}/")
+                    "${cfg-settings.targets.path}/${name}.nix"
+                    "${cfg-settings.targets.path}/${name}/"
                   ]))
                 ];
               };
@@ -125,115 +125,6 @@
               '';
               default = {};
             };
-
-            hosts = mkOption {
-              type = lazyAttrsOf host-type;
-              description = ''
-                Defines the hosts that belong to the target.
-                Each host is a `host-type` submodule, allowing for host-specific configurations such as system type, modules, and metadata.
-              '';
-              example = literalExpression ''
-                {
-                  web1 = {
-                    system = "x86_64-linux";
-                    modules = [ ./hosts/web1.nix ];
-                    meta = { role = "web"; };
-                  };
-                  db1 = {
-                    system = "x86_64-linux";
-                    modules = [ ./hosts/db1.nix ];
-                  };
-                }
-              '';
-              default = {};
-            };
-          };
-        })
-      ];
-    };
-
-  host-type = with types;
-    submoduleWith {
-      modules = [
-        {freeformType = lazyAttrsOf raw;}
-        ({
-          name,
-          config,
-          ...
-        }: {
-          imports = [
-            {
-              config = {
-                modules = concatLists [
-                  (take 1 (filter pathExists [
-                    (builtins.toPath "${cfg-settings.hosts.path}/${name}.nix")
-                    (builtins.toPath "${cfg-settings.hosts.path}/${config.system}/${name}.nix")
-
-                    (builtins.toPath "${cfg-settings.hosts.path}/${name}/")
-                    (builtins.toPath "${cfg-settings.hosts.path}/${config.system}/${name}/")
-                  ]))
-                ];
-              };
-            }
-          ];
-
-          options = {
-            name = mkOption {
-              type = str;
-              description = ''
-                The name of the host, automatically set to the attribute name of the host in `hosts`.
-                Used to set the default host name.
-              '';
-              default = name;
-            };
-
-            system = mkOption {
-              type = str;
-              description = ''
-                The system architecture or platform for the host (e.g., `x86_64-linux`, `aarch64-linux`).
-              '';
-              example = literalExpression ''"aarch64-linux"'';
-              default = "x86_64-linux";
-            };
-
-            modules = mkOption {
-              type = uniqueListOf module;
-              description = ''
-                A list of Nix modules specific to the host.
-                These modules define host-specific configurations, such as services, packages, or settings.
-              '';
-              example = literalExpression ''
-                [
-                  ./hosts/web1.nix
-                  { services.nginx.enable = true; }
-                ]
-              '';
-              default = [];
-            };
-
-            specialArgs = mkOption {
-              type = deepMergedAttrsOf raw;
-              description = ''
-                Extra arguments passed to the host's modules.
-                These can be used to customize module behavior for the specific host.
-              '';
-              example = literalExpression ''
-                { domain = "example.com"; port = 8080; }
-              '';
-              default = {};
-            };
-
-            meta = mkOption {
-              type = deepMergedAttrsOf raw;
-              description = ''
-                An attribute set for storing metadata about the host.
-                This can include arbitrary information such as roles, tags, or other descriptive data used for documentation or external tools.
-              '';
-              example = literalExpression ''
-                { role = "web"; location = "us-east"; priority = 1; }
-              '';
-              default = {};
-            };
           };
         })
       ];
@@ -277,18 +168,7 @@ in {
             The module looks for files like `<path>/<target-name>.nix` or directories like `<path>/<target-name>/` to include as modules.
           '';
           example = literalExpression ''./yanc/targets'';
-          default = builtins.toPath "${self}/targets";
-        };
-      };
-      settings.hosts = {
-        path = mkOption {
-          type = with types; path;
-          description = ''
-            The filesystem path where host-specific configuration files are stored.
-            The module searches for files like `<path>/<host-name>.nix`, `<path>/<system>/<host-name>.nix`, or directories like `<path>/<host-name>/` or `<path>/<system>/<host-name>/`.
-          '';
-          example = literalExpression ''./yanc/hosts'';
-          default = builtins.toPath "${self}/hosts";
+          default = "${self}/targets";
         };
       };
     };

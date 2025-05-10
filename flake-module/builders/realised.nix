@@ -5,8 +5,9 @@
 }: let
   inherit
     (yanc-lib)
-    map
     compose-all
+    groupByAttrs'
+    map
     ;
 
   inherit
@@ -27,15 +28,17 @@ in {
     yanc.realised = {
       builders = mkRealisedOption {
         default = cfg-builders;
-        apply = map (_: to-builder);
+        apply = builders: (map (_: type: map (_: to-builder) type) (groupByAttrs' (b: b.type) builders));
       };
     };
   };
 
   config = {
-    _module.args.builders = realised-builders;
+    _module.args = {
+      builders = realised-builders;
+    };
 
-    yanc.realisePerSystem = {system, ...}: {
+    yanc.realisePerSystem = _: {
       options = {
         builders = mkRealisedOption {
           default = realised-builders;
@@ -47,22 +50,6 @@ in {
 
     perSystem = {
       _module.args.builders = realised-builders;
-    };
-
-    perTarget = {
-      _module.args.builders = realised-builders;
-
-      perSystem = {
-        _module.args.builders = realised-builders;
-      };
-    };
-
-    perHome = {
-      _module.args.builders = realised-builders;
-
-      perSystem = {
-        _module.args.builders = realised-builders;
-      };
     };
   };
 }

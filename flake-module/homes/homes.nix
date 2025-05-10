@@ -9,22 +9,25 @@
     (lib)
     concatLists
     literalExpression
-    mkOption
     mkAliasOptionModule
+    mkOption
     pathExists
+    systems
     take
     ;
 
   inherit
     (yanc-lib)
-    types
     filter
+    types
     ;
 
   cfg = config;
-  cfg-settings = cfg.yanc.settings;
+  cfg-yanc = cfg.yanc;
+  cfg-settings = cfg-yanc.settings;
+  cfg-hosts = cfg-yanc.hosts;
 
-  cfg-homes = cfg.yanc.homes;
+  cfg-homes = cfg-yanc.homes;
 
   home-type = with types;
     submoduleWith {
@@ -42,8 +45,8 @@
                 modules = concatLists [
                   (cfg-settings.homes.shared.modules or [])
                   (take 1 (filter pathExists [
-                    (builtins.toPath "${cfg-settings.homes.path}/${name}.nix")
-                    (builtins.toPath "${cfg-settings.homes.path}/${name}/")
+                    "${cfg-settings.homes.path}/${name}.nix"
+                    "${cfg-settings.homes.path}/${name}/"
                   ]))
                 ];
 
@@ -60,6 +63,32 @@
                 Used to set the default home username.
               '';
               default = name;
+
+              readOnly = true;
+              internal = true;
+            };
+
+            username = mkOption {
+              type = str;
+              description = ''
+                The username of the Home Manager user, automatically set to the attribute name in `homes`.
+                Used to set the default home username.
+              '';
+              default = name;
+            };
+
+            homeDirectory = mkOption {
+              type = str;
+              description = ''
+                The username of the Home Manager user, automatically set to the attribute name in `homes`.
+                Used to set the default home username.
+              '';
+              default = let
+                sys = systems.elaborate config.system;
+              in
+                if sys.isDarwin
+                then "/Users/${config.username}"
+                else "/home/${config.username}";
             };
 
             system = mkOption {
@@ -69,7 +98,7 @@
                 This determines the platform for which Home Manager will build the configuration.
               '';
               example = literalExpression ''"aarch64-linux"'';
-              default = "x86_64-linux";
+              default = builtins.currentSystem or (throw "home [${name}]: builtins.currentSystem is not available. Make sure you are using the --impure flag or explicitly set a system.");
             };
 
             modules = mkOption {
@@ -152,8 +181,8 @@
                 config = {
                   modules = concatLists [
                     (take 1 (filter pathExists [
-                      (builtins.toPath "${cfg-settings.homes.path}/hosts/${home-name}/${name}.nix")
-                      (builtins.toPath "${cfg-settings.homes.path}/hosts/${home-name}/${name}/")
+                      "${cfg-settings.homes.path}/hosts/${home-name}/${name}.nix"
+                      "${cfg-settings.homes.path}/hosts/${home-name}/${name}/"
                     ]))
                   ];
                 };
@@ -167,10 +196,40 @@
                   The name of the host for the user's home configuration, automatically set to the attribute name in `yanc.homes.<home-name>.hosts`.
                   This is used internally to reference the host-specific configuration.
                 '';
+                default = "${home-name}@${name}";
+
+                internal = true;
+                readOnly = true;
+              };
+              host = mkOption {
+                type = str;
                 default = name;
 
                 internal = true;
                 readOnly = true;
+              };
+
+              username = mkOption {
+                type = str;
+                description = ''
+                  The username of the Home Manager user, automatically set to the attribute name in `homes`.
+                  Used to set the default home username.
+                '';
+                default = cfg-homes.${home-name}.username;
+              };
+
+              homeDirectory = mkOption {
+                type = str;
+                description = ''
+                  The username of the Home Manager user, automatically set to the attribute name in `homes`.
+                  Used to set the default home username.
+                '';
+                default = let
+                  sys = systems.elaborate config.system;
+                in
+                  if sys.isDarwin
+                  then "/Users/${config.username}"
+                  else "/home/${config.username}";
               };
 
               system = mkOption {
@@ -179,7 +238,7 @@
                   The system architecture or platform for the host (e.g., `x86_64-linux`, `aarch64-linux`).
                 '';
                 example = literalExpression ''"aarch64-linux"'';
-                default = cfg-homes.${home-name}.system;
+                default = cfg-hosts.${name}.system or cfg-homes.${home-name}.system;
               };
 
               modules = mkOption {
@@ -269,7 +328,7 @@ in {
             The module searches for a file like `<path>/<user-name>.nix` or a directory like `<path>/<user-name>/`.
           '';
           example = literalExpression ''./yanc/homes'';
-          default = builtins.toPath "${self}/homes";
+          default = "${self}/homes";
         };
 
         shared = mkOption {

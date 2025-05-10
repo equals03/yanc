@@ -10,19 +10,18 @@
 }: let
   inherit
     (lib)
-    genAttrs
+    attrValues
     concatLists
-    setFunctionArgs
+    mergeAttrsList
     ;
 
   inherit
     (yanc-lib)
+    compose-all
+    filter
     map
     map'
-    filter
     without
-    merge-recursive
-    compose-all
     ;
 
   inherit
@@ -44,55 +43,9 @@
         // {
           modules = concatLists [
             [
-              ## channel overlay
-              ({channels', ...}: {
-                nixpkgs.overlays = [
-                  (final: prev: {channels = (prev.channels or {}) // channels';})
-                ];
-              })
-              ## some sensible defaults
-              ({
-                home,
-                lib,
-                pkgs,
-                ...
-              }: {
-                home.username = lib.mkDefault home.name;
-                home.homeDirectory = lib.mkDefault (
-                  if pkgs.stdenv.hostPlatform.isDarwin
-                  then "/Users/${home.name}"
-                  else "/home/${home.name})"
-                );
-
-                programs.home-manager.enable = lib.mkDefault true;
-              })
-              ## some sensible nix based defaults
-              ({
-                config,
-                lib,
-                ...
-              }: let
-                cfg = config;
-                cfg-nix = cfg.nix;
-              in {
-                nix = lib.mkIf (cfg-nix.package != null) {
-                  settings = {
-                    # we are using flakes right?? :P
-                    experimental-features = lib.mkDefault [
-                      "nix-command"
-                      "flakes"
-                    ];
-
-                    # match the configuration based nix path with the
-                    # envrionment one - if its not available for some reason
-                    nix-path = lib.mkDefault cfg-nix.nixPath;
-
-                    # show more log lines for failed builds
-                    log-lines = lib.mkDefault 20;
-                  };
-                };
-              })
+              ./default-module.nix
             ]
+
             home.modules or []
             host.modules or []
           ];
@@ -108,7 +61,7 @@
               channels',
               ...
             }: {inherit self self' inputs inputs' channels';}))
-            // (merge-recursive [
+            // (mergeAttrsList [
               {
                 inherit yanc-lib;
                 host = sanitise-host host;
@@ -124,22 +77,15 @@
   sanitise-home = without ["modules" "specialArgs" "extraSpecialArgs" "hosts"];
   to-homes = compose-all [
     (
-      home: let
-        realised-homes =
-          {
-            ${home.name} = without ["hosts"] (home // (to-host-for home {}));
-          }
-          // map' (host-name: host: {
-            name = "${home.name}@${host-name}";
+      home:
+        {
+          ${home.name} = without ["hosts"] (home // {host = "";} // (to-host-for home {}));
+        }
+        // (map' (_host-name: host: {
+            inherit (host) name;
             value = to-host-for home host;
           })
-          home.hosts;
-      in
-        map (_: realised: let
-          with-pkgs = pkgs: realised // {inherit pkgs;};
-        in
-          realised // setFunctionArgs with-pkgs (builtins.functionArgs with-pkgs))
-        realised-homes
+          home.hosts)
     )
   ];
 in {
@@ -147,7 +93,7 @@ in {
     yanc.realised = {
       homes = mkRealisedOption {
         default = cfg-homes;
-        apply = map (_: to-homes);
+        apply = homes: (mergeAttrsList (attrValues (map (_: to-homes) homes)));
       };
     };
   };
@@ -155,11 +101,13 @@ in {
   config = {
     _module.args.homes = realised-homes;
 
+    yanc.systems = attrValues (map (_: home: home.system) realised-homes);
+
     yanc.realisePerSystem = {system, ...}: {
       options = {
         homes = mkRealisedOption {
           default = realised-homes;
-          apply = map (_: filter (_: home: home.system == system));
+          apply = filter (_: home: home.system == system);
 
           internal = true;
         };
@@ -168,14 +116,6 @@ in {
 
     perSystem = {system, ...}: {
       _module.args.homes' = (getRealisedSystem system).homes;
-    };
-
-    perHome = {home-name, ...}: {
-      _module.args.home = realised-homes.${home-name} or {};
-
-      perSystem = {system, ...}: {
-        _module.args.home' = (getRealisedSystem system).homes.${home-name};
-      };
     };
   };
 }

@@ -11,7 +11,9 @@
     ;
 
   builders-from-inputs = let
-    input-to-builder = builder-fn: {
+    input-to-builder = input: let
+      builder-fn = input.nixosGenerate;
+    in {
       builder = {settings, ...}: {
         system,
         modules,
@@ -20,9 +22,11 @@
         ...
       }:
         builder-fn (settings // {inherit format system modules specialArgs;});
+
+      type = "system";
     };
     builder-inputs = filter (_: is-nixos-generators) inputs;
-    builders = map (_: input: input-to-builder (input.nixosGenerate)) builder-inputs;
+    builders = map (_: input-to-builder) builder-inputs;
   in
     builders;
 in {

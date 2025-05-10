@@ -83,25 +83,5 @@ in {
     perSystem = {system, ...}: {
       _module.args = channel-module-args-for system;
     };
-
-    perTarget = {
-      _module.args.channels = realised-channels;
-
-      perSystem = (
-        {system, ...}: {
-          _module.args = channel-module-args-for system;
-        }
-      );
-    };
-
-    perHome = {
-      _module.args.channels = realised-channels;
-
-      perSystem = (
-        {system, ...}: {
-          _module.args = channel-module-args-for system;
-        }
-      );
-    };
   };
 }

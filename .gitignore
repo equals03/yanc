@@ -8,5 +8,3 @@ pkgs/_sources/.shake*
 /*.qcow2
 .std
 
-examples/complex/flake.lock
-examples/simple/flake.lock

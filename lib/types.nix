@@ -88,13 +88,13 @@ in {
             set = attrs-def-to-module loc;
             default = id;
           };
-        in (switch def.value);
+        in switch def.value;
       in
         mkOptionType {
           name = "module";
           description = "module";
           descriptionClass = "noun";
-          check = lib.types.deferredModule.check;
+          inherit (lib.types.deferredModule) check;
           merge = loc: defs: {imports = flatten (map (def-to-module loc) defs);};
         };
 

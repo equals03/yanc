@@ -11,6 +11,7 @@
     mkIf
     mkOption
     ;
+
   inherit
     (yanc-lib)
     filter
@@ -185,6 +186,6 @@ in {
   };
 
   config = {
-    yanc.channels = mkIf (cfg-settings.channels.discover) channels-from-inputs;
+    yanc.channels = mkIf cfg-settings.channels.discover channels-from-inputs;
   };
 }

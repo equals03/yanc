@@ -66,6 +66,19 @@
               readOnly = true;
               internal = true;
             };
+
+            type = mkOption {
+              type = enum ["system" "home"];
+              description = ''
+                The type of builder this is.
+                'system' would be for nixos/darwin/nixos-generators that create a system configuration.
+                'home' would be for anything responsible for making a home-manager based configuration.
+              '';
+              example = literalExpression ''
+                "home"
+              '';
+              default = "system";
+            };
           };
         })
       ];

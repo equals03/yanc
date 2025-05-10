@@ -12,7 +12,6 @@
   inherit
     (lib)
     filter
-    isPath
     listToAttrs
     mapAttrs
     readFile
@@ -168,10 +167,10 @@ in rec {
           listing;
     in
       {} // files // directories;
-  in (overloaded {
+  in overloaded {
       path = args: fn {path = args;};
       string = args: fn {path = args;};
       default = fn;
     }
-    args);
+    args;
 }
