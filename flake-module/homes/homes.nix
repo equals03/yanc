@@ -45,8 +45,8 @@
                 modules = concatLists [
                   (cfg-settings.homes.shared.modules or [])
                   (take 1 (filter pathExists [
-                    "${cfg-settings.homes.path}/${name}.nix"
-                    "${cfg-settings.homes.path}/${name}/"
+                    (cfg-settings.homes.path + "/${name}.nix")
+                    (cfg-settings.homes.path + "/${name}")
                   ]))
                 ];
 
@@ -181,8 +181,8 @@
                 config = {
                   modules = concatLists [
                     (take 1 (filter pathExists [
-                      "${cfg-settings.homes.path}/hosts/${home-name}/${name}.nix"
-                      "${cfg-settings.homes.path}/hosts/${home-name}/${name}/"
+                      (cfg-settings.homes.path + "/hosts/${home-name}/${name}.nix")
+                      (cfg-settings.homes.path + "/hosts/${home-name}/${name}")
                     ]))
                   ];
                 };

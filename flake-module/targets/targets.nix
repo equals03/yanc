@@ -34,8 +34,8 @@
               config = {
                 modules = concatLists [
                   (take 1 (filter pathExists [
-                    "${cfg-settings.targets.path}/${name}.nix"
-                    "${cfg-settings.targets.path}/${name}/"
+                    (cfg-settings.targets.path + "/${name}.nix")
+                    (cfg-settings.targets.path + "/${name}")
                   ]))
                 ];
               };

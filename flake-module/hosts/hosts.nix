@@ -38,11 +38,11 @@
               config = {
                 modules = concatLists [
                   (take 1 (filter pathExists [
-                    "${cfg-settings.hosts.path}/${name}.nix"
-                    "${cfg-settings.hosts.path}/${config.system}/${name}.nix"
+                    (cfg-settings.hosts.path + "/${name}.nix")
+                    (cfg-settings.hosts.path + "/${config.system}/${name}.nix")
 
-                    "${cfg-settings.hosts.path}/${name}/"
-                    "${cfg-settings.hosts.path}/${config.system}/${name}/"
+                    (cfg-settings.hosts.path + "/${name}/")
+                    (cfg-settings.hosts.path + "/${config.system}/${name}")
                   ]))
                 ];
               };
