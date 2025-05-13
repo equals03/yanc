@@ -23,6 +23,6 @@ in {
       hostPlatform = lib.mkDefault host.system;
     };
 
-    system.configurationRevision = lib.mkDefault (self.shortRev or self.dirtyShortRev or self.lastModified or "unknown");
+    system.configurationRevision = lib.mkDefault (self.shortRev or self.dirtyShortRev or null);
   };
 }
