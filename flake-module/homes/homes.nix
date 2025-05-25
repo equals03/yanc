@@ -11,6 +11,7 @@
     literalExpression
     mkAliasOptionModule
     mkOption
+    path
     pathExists
     systems
     take
@@ -29,6 +30,8 @@
 
   cfg-homes = cfg-yanc.homes;
 
+  append-to-search-path = path.append cfg-settings.homes.path;
+
   home-type = with types;
     submoduleWith {
       modules = [
@@ -45,8 +48,8 @@
                 modules = concatLists [
                   (cfg-settings.homes.shared.modules or [])
                   (take 1 (filter pathExists [
-                    (cfg-settings.homes.path + "/${name}.nix")
-                    (cfg-settings.homes.path + "/${name}")
+                    (append-to-search-path "${name}.nix")
+                    (append-to-search-path "${name}")
                   ]))
                 ];
 
@@ -181,8 +184,8 @@
                 config = {
                   modules = concatLists [
                     (take 1 (filter pathExists [
-                      (cfg-settings.homes.path + "/hosts/${home-name}/${name}.nix")
-                      (cfg-settings.homes.path + "/hosts/${home-name}/${name}")
+                      (append-to-search-path "hosts/${home-name}/${name}.nix")
+                      (append-to-search-path "hosts/${home-name}/${name}")
                     ]))
                   ];
                 };
@@ -322,7 +325,7 @@ in {
 
       settings.homes = {
         path = mkOption {
-          type = with types; path;
+          type = types.path;
           description = ''
             The filesystem path where Home Manager configuration files for users are stored.
             The module searches for a file like `<path>/<user-name>.nix` or a directory like `<path>/<user-name>/`.

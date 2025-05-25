@@ -11,6 +11,7 @@
     genAttrs
     literalExpression
     mkOption
+    path
     pathExists
     take
     ;
@@ -24,6 +25,8 @@
   cfg = config;
   cfg-settings = cfg.yanc.settings;
 
+  append-to-search-path = path.append cfg-settings.targets.path;
+
   target-type = with types;
     submoduleWith {
       modules = [
@@ -34,8 +37,8 @@
               config = {
                 modules = concatLists [
                   (take 1 (filter pathExists [
-                    (cfg-settings.targets.path + "/${name}.nix")
-                    (cfg-settings.targets.path + "/${name}")
+                    (append-to-search-path "${name}.nix")
+                    (append-to-search-path "${name}")
                   ]))
                 ];
               };
@@ -162,7 +165,7 @@ in {
       };
       settings.targets = {
         path = mkOption {
-          type = path;
+          type = types.path;
           description = ''
             The filesystem path where target-specific configuration files are stored.
             The module looks for files like `<path>/<target-name>.nix` or directories like `<path>/<target-name>/` to include as modules.

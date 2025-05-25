@@ -10,6 +10,7 @@
     concatLists
     literalExpression
     mkOption
+    path
     pathExists
     take
     ;
@@ -23,6 +24,8 @@
   cfg = config;
   cfg-yanc = cfg.yanc;
   cfg-settings = cfg-yanc.settings;
+
+  append-to-search-path = path.append cfg-settings.hosts.path;
 
   host-type = with types;
     submoduleWith {
@@ -38,11 +41,10 @@
               config = {
                 modules = concatLists [
                   (take 1 (filter pathExists [
-                    (cfg-settings.hosts.path + "/${name}.nix")
-                    (cfg-settings.hosts.path + "/${config.system}/${name}.nix")
-
-                    (cfg-settings.hosts.path + "/${name}/")
-                    (cfg-settings.hosts.path + "/${config.system}/${name}")
+                    (append-to-search-path "${name}.nix")
+                    (append-to-search-path "${config.system}/${name}.nix")
+                    (append-to-search-path "${name}")
+                    (append-to-search-path "${config.system}/${name}")
                   ]))
                 ];
               };
@@ -144,7 +146,7 @@ in {
       };
       settings.hosts = {
         path = mkOption {
-          type = with types; path;
+          type = types.path;
           description = ''
             The filesystem path where host-specific configuration files are stored.
             The module searches for files like `<path>/<host-name>.nix`, `<path>/<system>/<host-name>.nix`, or directories like `<path>/<host-name>/` or `<path>/<system>/<host-name>/`.
