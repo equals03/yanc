@@ -19,6 +19,7 @@
 
   inherit
     (yanc-lib)
+    overloaded
     filter
     types
     ;
@@ -30,7 +31,13 @@
 
   cfg-homes = cfg-yanc.homes;
 
-  append-to-search-path = path.append cfg-settings.homes.path;
+  append-to-search-path = let
+    base = cfg-settings.homes.path;
+  in
+    overloaded {
+      string = p: base + "/${p}";
+      path = path.append base;
+    };
 
   home-type = with types;
     submoduleWith {

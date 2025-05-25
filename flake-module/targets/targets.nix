@@ -18,6 +18,7 @@
 
   inherit
     (yanc-lib)
+    overloaded
     types
     filter
     ;
@@ -25,7 +26,13 @@
   cfg = config;
   cfg-settings = cfg.yanc.settings;
 
-  append-to-search-path = path.append cfg-settings.targets.path;
+  append-to-search-path = let
+    base = cfg-settings.targets.path;
+  in
+    overloaded {
+      string = p: base + "/${p}";
+      path = path.append base;
+    };
 
   target-type = with types;
     submoduleWith {
